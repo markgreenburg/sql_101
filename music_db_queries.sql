@@ -130,7 +130,8 @@ HAVING
 
 # What are the albums produced by a given artist as the lead artist?
 SELECT
-  albums.full_name
+  albums.full_name,
+  artists.full_name
 FROM music_db.albums albums
 INNER JOIN music_db.albums_songs albums_songs
 ON albums.id = albums_songs.album_id
@@ -142,3 +143,122 @@ INNER JOIN (
   WHERE
     is_lead = 1
 ) songs_artists
+ON albums_songs.song_id = songs_artists.song_id
+INNER JOIN music_db.artists
+ON songs_artists.artist_id = artists.id
+#WHERE artists.full_name = 'Some Name'
+GROUP BY 1, 2
+;
+
+# What albums has a given artist participated in (not necessarily as lead
+# artist).
+SELECT
+  albums.full_name,
+  artists.full_name
+FROM music_db.albums albums
+INNER JOIN music_db.albums_songs albums_songs
+ON albums.id = albums_songs.album_id
+INNER JOIN music_db.songs_artists songs_artists
+ON albums_songs.song_id = songs_artists.song_id
+INNER JOIN music_db.artists
+ON songs_artists.artist_id = artists.id
+#WHERE artists.full_name = 'Some Name'
+GROUP BY 1, 2
+;
+
+# Who are the 5 most prolific artists based on the number of albums they have
+# participated in.
+SELECT
+  artists.full_name,
+  count(albums.id) AS total_albums
+FROM music_db.albums albums
+INNER JOIN music_db.albums_songs albums_songs
+ON albums.id = albums_songs.album_id
+INNER JOIN music_db.songs_artists songs_artists
+ON albums_songs.song_id = songs_artists.song_id
+INNER JOIN music_db.artists
+ON songs_artists.artist_id = artists.id
+GROUP BY artists.full_name
+ORDER BY total_albums DESC
+LIMIT 5
+;
+
+# What are the albums where the lead artist is a pianist (or any instrument of
+# your choice)?
+SELECT
+  albums.full_name AS album_name,
+  instruments.full_name AS instrument
+FROM music_db.albums albums
+INNER JOIN music_db.albums_songs albums_songs
+ON albums.id = albums_songs.album_id
+INNER JOIN (
+  SELECT
+    song_id,
+    artist_id
+    FROM music_db.songs_artists
+    WHERE
+      is_lead = 1
+) songs_artists
+ON albums_songs.song_id = songs_artists.song_id
+INNER JOIN music_db.artists_instruments artists_instruments
+ON songs_artists.artist_id = artists_instruments.artist_id
+INNER JOIN music_db.instruments instruments
+ON artists_instruments.instrument_id = instruments.id
+WHERE
+  instruments.full_name = 'Some Instrument'
+GROUP BY 1, 2
+;
+
+# What are the top 5 most often recorded songs?
+SELECT
+  songs.full_name AS song_name,
+  count(albums_songs.id) AS recordings
+FROM music_db.songs songs
+INNER JOIN music_db.albums_songs albums_songs
+ON songs.id = albums_songs.song_id
+WHERE
+  songs.full_name = 'For You'
+GROUP BY 1
+ORDER BY 2 DESC
+LIMIT 5
+;
+
+# Who are the top 5 song writers whose songs have been most often recorded?
+SELECT
+  songwriters.first_name,
+  songwriters.last_name,
+  count(albums_songs.id) AS recordings
+FROM music_db.songwriters songwriters
+INNER JOIN music_db.songs_songwriters songs_songwriters
+ON songwriters.id = songs_songwriters.songwriter_id
+INNER JOIN music_db.albums_songs albums_songs
+ON songs_songwriters.song_id = albums_songs.song_id
+GROUP BY 1, 2
+ORDER BY 3 DESC
+LIMIT 5
+;
+
+# Who is the most prolific song writer based on the number of songs he has
+# written?
+SELECT
+  songwriters.first_name,
+  songwriters.last_name,
+  count(songs_songwriters.song_id) AS songs_written
+FROM music_db.songwriters songwriters
+INNER JOIN music_db.songs_songwriters songs_songwriters
+ON songwriters.id = songs_songwriters.songwriter_id
+GROUP BY 1, 2
+ORDER BY 3 DESC
+LIMIT 1
+;
+
+# What artist plays the most instruments?
+SELECT
+  artists.full_name,
+  count(artists_instruments.instrument_id) AS instruments
+FROM music_db.artists artists
+INNER JOIN music_db.artists_instruments artists_instruments
+ON artists.id = artists_instruments.artist_id
+GROUP BY 1
+ORDER BY 2 DESC
+;
