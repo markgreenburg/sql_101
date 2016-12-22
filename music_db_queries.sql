@@ -1,5 +1,5 @@
-# What are tracks for a given album?
-# tables: albums, songs, albums_songs
+ -- What are tracks for a given album?
+ -- tables: albums, songs, albums_songs
 SELECT
   songs.full_name
 FROM music_db.songs songs
@@ -14,8 +14,8 @@ INNER JOIN
 ORDER BY albums.full_name ASC
 ;
 
-# What instruments does each artist play?
-# tables: artists, instruments, artists_instruments
+ -- What instruments does each artist play?
+ -- tables: artists, instruments, artists_instruments
 SELECT
   artists.full_name,
   instruments.full_name
@@ -31,7 +31,7 @@ INNER JOIN
 ORDER BY artists.full_name ASC
 ;
 
-# What is the track with the longest duration?
+ -- What is the track with the longest duration?
 SELECT
   songs.full_name,
   songs.duration
@@ -40,7 +40,7 @@ ORDER BY duration DESC
 LIMIT 1
 ;
 
-# What are the albums released in the 60s? 70s? 80s? 90s?
+ -- What are the albums released in the 60s? 70s? 80s? 90s?
 SELECT
   albums.full_name,
   albums.release_date
@@ -50,7 +50,7 @@ WHERE
   AND albums.release_date < '2000'
 ;
 
-# How many albums did a given artist produce in the 90s?
+ -- How many albums did a given artist produce in the 90s?
 SELECT
 	get_ids.full_name artist_name,
 	count(get_ids.album_id) album_count
@@ -85,8 +85,8 @@ FROM (
 GROUP BY full_name
 ;
 
-# What is the total run time of each album (based on the duration of its
-#  tracks)?
+ -- What is the total run time of each album (based on the duration of its
+ --  tracks)?
 SELECT
   albums.full_name,
   sum(songs.duration) AS duration
@@ -98,7 +98,7 @@ ON albums_songs.song_id = songs.id
 GROUP BY albums.full_name
 ;
 
-# What are all the tracks a given artist has recorded?
+ -- What are all the tracks a given artist has recorded?
 SELECT
   artists.full_name,
   songs.full_name
@@ -109,7 +109,7 @@ INNER JOIN music_db.songs songs
 ON songs_artists.song_id = songs.id
 ;
 
-# What are the albums recorded by only one solo artist?
+ -- What are the albums recorded by only one solo artist?
 SELECT
 	full_name
 FROM (
@@ -128,7 +128,7 @@ HAVING
 	COUNT(full_name) = 1
 ;
 
-# What are the albums produced by a given artist as the lead artist?
+ -- What are the albums produced by a given artist as the lead artist?
 SELECT
   albums.full_name,
   artists.full_name
@@ -150,8 +150,8 @@ ON songs_artists.artist_id = artists.id
 GROUP BY 1, 2
 ;
 
-# What albums has a given artist participated in (not necessarily as lead
-# artist).
+ -- What albums has a given artist participated in (not necessarily as lead
+ -- artist).
 SELECT
   albums.full_name,
   artists.full_name
@@ -166,8 +166,8 @@ ON songs_artists.artist_id = artists.id
 GROUP BY 1, 2
 ;
 
-# Who are the 5 most prolific artists based on the number of albums they have
-# participated in.
+ -- Who are the 5 most prolific artists based on the number of albums they have
+ -- participated in.
 SELECT
   artists.full_name,
   count(albums.id) AS total_albums
@@ -183,8 +183,8 @@ ORDER BY total_albums DESC
 LIMIT 5
 ;
 
-# What are the albums where the lead artist is a pianist (or any instrument of
-# your choice)?
+ -- What are the albums where the lead artist is a pianist (or any instrument of
+ -- your choice)?
 SELECT
   albums.full_name AS album_name,
   instruments.full_name AS instrument
@@ -209,7 +209,7 @@ WHERE
 GROUP BY 1, 2
 ;
 
-# What are the top 5 most often recorded songs?
+ -- What are the top 5 most often recorded songs?
 SELECT
   songs.full_name AS song_name,
   count(albums_songs.id) AS recordings
@@ -223,7 +223,7 @@ ORDER BY 2 DESC
 LIMIT 5
 ;
 
-# Who are the top 5 song writers whose songs have been most often recorded?
+ -- Who are the top 5 song writers whose songs have been most often recorded?
 SELECT
   songwriters.first_name,
   songwriters.last_name,
@@ -238,8 +238,8 @@ ORDER BY 3 DESC
 LIMIT 5
 ;
 
-# Who is the most prolific song writer based on the number of songs he has
-# written?
+ -- Who is the most prolific song writer based on the number of songs he has
+ -- written?
 SELECT
   songwriters.first_name,
   songwriters.last_name,
@@ -252,13 +252,80 @@ ORDER BY 3 DESC
 LIMIT 1
 ;
 
-# What artist plays the most instruments?
+-- What artist plays the most instruments?
 SELECT
   artists.full_name,
   count(artists_instruments.instrument_id) AS instruments
 FROM music_db.artists artists
 INNER JOIN music_db.artists_instruments artists_instruments
 ON artists.id = artists_instruments.artist_id
+GROUP BY 1
+ORDER BY 2 DESC
+;
+
+-- Who are a given artist's collaborators?
+
+-- First, find all unique recordings for a given artist
+DROP TEMPORARY TABLE IF EXISTS recordings;
+CREATE TEMPORARY TABLE recordings AS
+SELECT
+  albums_songs.id AS recording_id
+FROM music_db.artists
+INNER JOIN music_db.songs_artists songs_artists
+ON artists.id = songs_artists.artist_id
+INNER JOIN music_db.songs
+ON songs_artists.song_id = songs.id
+INNER JOIN music_db.albums_songs albums_songs
+ON songs.id = albums_songs.song_id
+WHERE
+  artists.full_name = 'Prince'
+;
+
+-- Then, find other artists who participated on the same recordings
+SELECT
+  artists.id,
+  artists.full_name
+FROM music_db.artists artists
+INNER JOIN music_db.songs_artists songs_artists
+ON artists.id = songs_artists.artist_id
+INNER JOIN music_db.albums_songs albums_songs
+ON songs_artists.song_id = albums_songs.song_id
+INNER JOIN recordings
+ON albums_songs.id = recordings.recording_id
+WHERE
+  artists.full_name <> 'Prince'
+;
+
+-- First, find all unique recordings for a given artist
+DROP TEMPORARY TABLE IF EXISTS recordings;
+CREATE TEMPORARY TABLE recordings AS
+SELECT
+  artists.full_name AS artist_name,
+  albums_songs.id AS recording_id
+FROM music_db.artists
+INNER JOIN music_db.songs_artists songs_artists
+ON artists.id = songs_artists.artist_id
+INNER JOIN music_db.songs
+ON songs_artists.song_id = songs.id
+INNER JOIN music_db.albums_songs albums_songs
+ON songs.id = albums_songs.song_id
+WHERE
+  artists.full_name = 'Prince'
+;
+
+-- Then, count their collaborators
+SELECT
+  recordings.artist_name,
+  count(artists.full_name) AS named_collaborators
+FROM music_db.artists artists
+INNER JOIN music_db.songs_artists songs_artists
+ON artists.id = songs_artists.artist_id
+INNER JOIN music_db.albums_songs albums_songs
+ON songs_artists.song_id = albums_songs.song_id
+INNER JOIN recordings
+ON albums_songs.id = recordings.recording_id
+WHERE
+  artists.full_name <> 'Prince'
 GROUP BY 1
 ORDER BY 2 DESC
 ;
