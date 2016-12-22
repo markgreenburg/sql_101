@@ -86,7 +86,7 @@ WHERE
 /*
 3. Create new links to those addresses for our top earners to give them a second house
 */
-INSERT INTO demodb.address_employee (address_id, employee_id)
+INSERT INTO demodb.address_employee (employee_id, address_id)
 	SELECT
 		employees.employee_id,
 		addresses.address_id
