@@ -59,25 +59,15 @@ FROM (
     artists.full_name,
     album_id
   FROM music_db.artists artists
-  INNER JOIN (
-    SELECT
-      *
-      FROM music_db.songs_artists songs_artists
-      WHERE
-        is_lead = 1
-  ) songs_artists
-  ON artists.id = songs_artists.artist_id
+  INNER JOIN music_db.songs_artists songs_artists
+  ON artists.id = songs_artists.artist_id and songs_artists.is_lead = 1
   INNER JOIN albums_songs albums_songs
   ON songs_artists.song_id = albums_songs.song_id
-  INNER JOIN (
-    SELECT
-      *
-    FROM albums albums
-    WHERE
-	    albums.release_date > '1990'
-	    AND albums.release_date < '2000'
-  ) albums
-  ON albums_songs.album_id = albums.id
+  INNER JOIN albums albums
+  ON
+    albums_songs.album_id = albums.id
+    AND albums.release_date > '1990'
+	  AND albums.release_date > '1990'
   GROUP BY 1, 2
 ) get_ids
 #WHERE
